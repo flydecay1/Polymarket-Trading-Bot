@@ -1,0 +1,39 @@
+# Core dependencies
+python-dotenv==1.0.0
+pyyaml==6.0.1
+requests==2.31.0
+aiohttp==3.9.1
+asyncio==3.4.3
+
+# Data processing
+pandas==2.1.4
+numpy==1.26.2
+
+# Machine learning
+scikit-learn==1.3.2
+joblib==1.3.2
+
+# Polymarket / Web3
+py-clob-client==0.16.0
+web3==6.11.3
+eth-account==0.10.0
+
+# Logging and monitoring
+structlog==23.2.0
+colorama==0.4.6
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+
+# Data sources
+pandascore==0.0.1
+beautifulsoup4==4.12.2
+lxml==4.9.3
+
+# Web dashboard
+flask==3.0.0
+
+# Alerts
+# python-telegram-bot would be alternative, but we use raw API with aiohttp
