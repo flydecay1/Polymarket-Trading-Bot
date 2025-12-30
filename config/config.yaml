@@ -1,0 +1,77 @@
+data_ingestion:
+  pandascore:
+    base_url: "https://api.pandascore.co"
+    poll_interval: 2  # seconds
+    timeout: 10
+    retry_attempts: 3
+
+  game_state:
+    material_change_threshold:
+      gold_diff: 500
+      kills: 1
+      towers: 1
+      dragons: 1
+      barons: 1
+      inhibitors: 1
+
+probability_model:
+  features:
+    - gold_diff
+    - kill_diff
+    - tower_diff
+    - dragon_diff
+    - baron_diff
+    - inhib_diff
+    - game_time_minutes
+
+  training:
+    test_size: 0.2
+    random_state: 42
+    model_type: "logistic_regression"  # or "gradient_boosting"
+
+  data_collection:
+    min_game_time: 600  # 10 minutes
+    max_games: 10000
+    leagues:
+      - LCK
+      - LPL
+      - LEC
+      - LCS
+      - Worlds
+
+polymarket:
+  clob_url: "https://clob.polymarket.com"
+  api_url: "https://gamma-api.polymarket.com"
+  chain_id: 137
+  gas_limit: 500000
+
+  market_matching:
+    fuzzy_threshold: 0.85
+    team_aliases:
+      "T1": ["T1", "SKT", "SK Telecom"]
+      "Gen.G": ["GenG", "Gen.G", "Gen. G"]
+      "DRX": ["DRX", "DragonX"]
+      # Add more as needed
+
+arbitrage:
+  strategy:
+    min_edge: 0.05  # 5%
+    max_position_size: 100.0  # USD
+    min_liquidity: 500.0  # USD
+    max_spread: 0.02  # 2%
+
+  risk_management:
+    max_total_exposure: 1000.0  # USD
+    max_positions_per_match: 1
+    stop_loss_threshold: 0.3  # Exit if down 30%
+
+  execution:
+    order_timeout: 30  # seconds
+    slippage_tolerance: 0.01  # 1%
+    use_limit_orders: true
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/arbitrage_bot.log"
+  console: true
