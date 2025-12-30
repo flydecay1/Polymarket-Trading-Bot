@@ -34,7 +34,9 @@ class ArbitrageStrategy:
         max_position_size: float = 100.0,
         min_liquidity: float = 500.0,
         max_spread: float = 0.02,
-        slippage_tolerance: float = 0.01
+        slippage_tolerance: float = 0.01,
+        use_kelly_criterion: bool = True,
+        kelly_fraction: float = 0.25
     ):
         """Initialize strategy.
 
@@ -44,12 +46,16 @@ class ArbitrageStrategy:
             min_liquidity: Minimum market liquidity required
             max_spread: Maximum bid-ask spread allowed
             slippage_tolerance: Maximum slippage tolerance
+            use_kelly_criterion: Use Kelly Criterion for position sizing
+            kelly_fraction: Fraction of Kelly to use (0.25 = quarter Kelly)
         """
         self.min_edge = min_edge
         self.max_position_size = max_position_size
         self.min_liquidity = min_liquidity
         self.max_spread = max_spread
         self.slippage_tolerance = slippage_tolerance
+        self.use_kelly_criterion = use_kelly_criterion
+        self.kelly_fraction = kelly_fraction
 
     def evaluate(
         self,
@@ -113,9 +119,11 @@ class ArbitrageStrategy:
             return None
 
         # Calculate position size
-        # Size based on Kelly Criterion or fixed size
-        # For simplicity, use fixed size with edge-based scaling
-        size = min(self.max_position_size, self.max_position_size * abs(edge) / self.min_edge)
+        if self.use_kelly_criterion:
+            size = self._calculate_kelly_size(edge, limit_price, model_prob)
+        else:
+            # Fixed size with edge-based scaling
+            size = min(self.max_position_size, self.max_position_size * abs(edge) / self.min_edge)
 
         # Check slippage
         avg_price, slippage_pct = orderbook.calculate_slippage(side, size)
@@ -151,3 +159,64 @@ class ArbitrageStrategy:
         )
 
         return signal
+
+    def _calculate_kelly_size(self, edge: float, price: float, win_prob: float) -> float:
+        """Calculate position size using Kelly Criterion.
+
+        Kelly formula: f = (bp - q) / b
+        where:
+          f = fraction of bankroll to bet
+          b = odds received (decimal odds - 1)
+          p = probability of winning
+          q = probability of losing (1 - p)
+
+        We use fractional Kelly (default 0.25) for safety.
+
+        Args:
+            edge: Edge (model_prob - market_prob)
+            price: Market price
+            win_prob: Model's win probability
+
+        Returns:
+            Position size in USD
+        """
+        # Convert price to decimal odds
+        # In Polymarket, price IS the probability, so odds = 1/price - 1
+        # But for Kelly, we need the payout odds
+        if price <= 0 or price >= 1:
+            return self.max_position_size * 0.1  # Fallback to small size
+
+        # For binary outcomes on Polymarket:
+        # If we buy at price p, we pay $p to potentially get $1 (payout = $1 - $p)
+        # So decimal odds b = (1 - p) / p = 1/p - 1
+        b = (1.0 / price) - 1.0
+
+        p = win_prob
+        q = 1 - p
+
+        # Kelly fraction
+        kelly = (b * p - q) / b
+
+        # Apply fractional Kelly for safety
+        kelly = kelly * self.kelly_fraction
+
+        # Ensure non-negative
+        kelly = max(0, kelly)
+
+        # Convert to position size (cap at max_position_size)
+        # Kelly gives us fraction of bankroll, we use max_position_size as reference
+        size = kelly * self.max_position_size * 10  # Assume bankroll = 10x max position
+
+        # Cap at max position size
+        size = min(size, self.max_position_size)
+
+        logger.debug(
+            "kelly_sizing",
+            edge=edge,
+            price=price,
+            win_prob=win_prob,
+            kelly_fraction=kelly,
+            size=size
+        )
+
+        return size

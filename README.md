@@ -126,8 +126,26 @@ The bot will:
 - Calculate win probabilities in real-time
 - Match games to Polymarket markets
 - Execute trades when profitable opportunities are detected
+- Launch web dashboard at http://localhost:5000
 
 Press `Ctrl+C` to stop gracefully.
+
+### Running Backtests
+
+Validate your strategy on historical data:
+
+```bash
+python scripts/run_backtest.py
+```
+
+Requirements:
+- Trained model
+- Historical data in `data/backtest/matches.csv` and `data/backtest/markets.csv`
+
+The backtest will:
+- Simulate trades on historical match data
+- Calculate realistic P&L with slippage and fees
+- Output performance metrics and save results
 
 ## ⚙️ Configuration
 
@@ -137,14 +155,26 @@ Main configuration is in `config/config.yaml`:
 ```yaml
 arbitrage:
   strategy:
-    min_edge: 0.05          # Minimum 5% edge to trade
+    min_edge: 0.05           # Minimum 5% edge to trade
     max_position_size: 100.0 # Max $100 per position
     min_liquidity: 500.0     # Min $500 market liquidity
     max_spread: 0.02         # Max 2% bid-ask spread
+    use_kelly_criterion: true  # Use Kelly Criterion sizing
+    kelly_fraction: 0.25     # Quarter Kelly (conservative)
 
   risk_management:
     max_total_exposure: 1000.0  # Max $1000 total exposure
     max_positions_per_match: 1   # One position per match
+
+alerts:
+  telegram:
+    enabled: false  # Set to true and add credentials to .env
+  discord:
+    enabled: false
+
+dashboard:
+  enabled: true
+  port: 5000
 ```
 
 ### Data Ingestion
@@ -203,18 +233,45 @@ If Edge > min_edge_threshold → BUY signal
 If Edge < -min_edge_threshold → SELL signal
 ```
 
+### Kelly Criterion Position Sizing
+- **Optimal bet sizing** based on edge and win probability
+- **Fractional Kelly** (quarter Kelly by default) for safety
+- **Dynamic sizing** scales with confidence
+- Falls back to fixed sizing if Kelly disabled
+
 ### Risk Management
 - **Position Limits**: Max position size per trade
 - **Exposure Limits**: Max total capital at risk
 - **Liquidity Checks**: Only trade markets with sufficient depth
 - **Slippage Protection**: Calculate expected slippage before trading
 - **Duplicate Prevention**: One position per match
+- **Data Validation**: Sanity checks on game state data
 
 ### Market Matching
 Intelligent fuzzy matching between live game teams and Polymarket markets:
 - Handles team name variations (T1, SKT, SK Telecom)
 - Configurable team aliases
 - Similarity threshold tuning
+
+### Backtesting Framework
+- Test strategies on historical data
+- Realistic simulation with slippage and commissions
+- Comprehensive metrics: Sharpe ratio, max drawdown, edge realization
+- Export results to CSV for analysis
+
+### Monitoring & Alerts
+- **Web Dashboard**: Real-time performance monitoring at http://localhost:5000
+- **Telegram Alerts**: Trade execution, P&L updates, errors
+- **Discord Webhooks**: Team notifications
+- **Performance Tracking**: Win rate, profit factor, edge realization
+
+### Web Dashboard
+Access at `http://localhost:5000` when bot is running:
+- Live bot status and uptime
+- Active positions and exposure
+- Total P&L and win rate
+- Sharpe ratio and profit factor
+- Auto-refreshes every 5 seconds
 
 ## 📈 Model Performance
 
@@ -246,6 +303,11 @@ Run unit tests:
 pytest tests/
 ```
 
+Run backtest:
+```bash
+python scripts/run_backtest.py
+```
+
 ## 📝 Logs
 
 Logs are written to:
@@ -262,6 +324,7 @@ Log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
 2. **Better models**: Modify `src/probability_model/model_trainer.py`
 3. **Trading strategies**: Create new strategies in `src/arbitrage/strategy.py`
 4. **Team aliases**: Update `config/config.yaml` → `polymarket.market_matching.team_aliases`
+5. **Custom alerts**: Extend `src/utils/alerts.py`
 
 ### Model Retraining
 
@@ -270,6 +333,29 @@ Retrain periodically with fresh data:
 python scripts/collect_data.py
 python scripts/train_model.py
 ```
+
+### Monitoring & Alerts
+
+**Web Dashboard:**
+- Access at http://localhost:5000 when bot is running
+- Shows real-time metrics, positions, P&L
+- Auto-refreshes every 5 seconds
+
+**Telegram Alerts:**
+1. Create bot via @BotFather on Telegram
+2. Get bot token
+3. Get your chat ID (use @userinfobot)
+4. Add to config/.env:
+   ```
+   TELEGRAM_BOT_TOKEN=your_token
+   TELEGRAM_CHAT_ID=your_chat_id
+   ```
+5. Enable in config/config.yaml: `alerts.telegram.enabled: true`
+
+**Discord Alerts:**
+1. Create webhook in Discord channel settings
+2. Add to config/.env: `DISCORD_WEBHOOK_URL=your_webhook_url`
+3. Enable in config/config.yaml: `alerts.discord.enabled: true`
 
 ## ⚠️ Disclaimers
 

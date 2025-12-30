@@ -59,6 +59,8 @@ arbitrage:
     max_position_size: 100.0  # USD
     min_liquidity: 500.0  # USD
     max_spread: 0.02  # 2%
+    use_kelly_criterion: true  # Use Kelly Criterion for sizing
+    kelly_fraction: 0.25  # Quarter Kelly (conservative)
 
   risk_management:
     max_total_exposure: 1000.0  # USD
@@ -69,6 +71,20 @@ arbitrage:
     order_timeout: 30  # seconds
     slippage_tolerance: 0.01  # 1%
     use_limit_orders: true
+
+alerts:
+  telegram:
+    enabled: false  # Set to true to enable
+    # Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in .env
+
+  discord:
+    enabled: false  # Set to true to enable
+    # Set DISCORD_WEBHOOK_URL in .env
+
+dashboard:
+  enabled: true
+  port: 5000
+  host: "0.0.0.0"
 
 logging:
   level: "INFO"

@@ -31,3 +31,9 @@ pytest-cov==4.1.0
 pandascore==0.0.1
 beautifulsoup4==4.12.2
 lxml==4.9.3
+
+# Web dashboard
+flask==3.0.0
+
+# Alerts
+# python-telegram-bot would be alternative, but we use raw API with aiohttp

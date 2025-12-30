@@ -129,6 +129,36 @@ class GameState:
             'winner': self.winner
         }
 
+    def validate(self) -> bool:
+        """Validate game state data for sanity.
+
+        Returns:
+            True if valid, False otherwise
+        """
+        # Time bounds (0-90 minutes typical)
+        if self.game_time_minutes < 0 or self.game_time_minutes > 120:
+            return False
+
+        # Gold bounds (realistic range)
+        if abs(self.gold_diff) > 100000:  # Unrealistic gold swing
+            return False
+
+        # Objective bounds
+        if self.team1.barons > 10 or self.team2.barons > 10:  # Max possible
+            return False
+        if self.team1.dragons > 10 or self.team2.dragons > 10:
+            return False
+        if self.team1.towers > 11 or self.team2.towers > 11:  # 11 towers per side
+            return False
+        if self.team1.inhibs > 3 or self.team2.inhibs > 3:  # 3 inhibs per side
+            return False
+
+        # Kills bounds (realistic)
+        if self.team1.kills > 100 or self.team2.kills > 100:
+            return False
+
+        return True
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'GameState':
         """Create from dictionary."""
